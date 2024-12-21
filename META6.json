@@ -1,0 +1,26 @@
+{
+    "name": "Math::Splines",
+    "description": "Raku package for splines (piecewise polynomials), like, Bezier splines or B-splines.",
+    "version": "0.1.0",
+    "raku": "6.d",
+    "authors": [
+        "Anton Antonov"
+    ],
+    "auth": "zef:antononcube",
+    "build-depends": [],
+    "provides": {
+        "Math::SpecialFunctions": "lib/Math/Splines.rakumod"
+    },
+    "license": "Artistic-2.0",
+    "tags": [
+        "b-spline",
+        "b-splines",
+        "bezier curve",
+        "bezier spline",
+        "bezier",
+        "math",
+        "splines"
+    ],
+    "api": "1",
+    "source-url": "https://github.com/antononcube/Raku-Math-Splines.git"
+}
