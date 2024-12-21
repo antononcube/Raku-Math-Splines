@@ -4,7 +4,7 @@ use Test;
 use lib <. lib>;
 use Math::Splines;
 
-is b-spline-basis(3, 0.5), 2/3;
+is b-spline-basis(3, 0, 0.5), 2/3;
 
 is b-spline-basis(3, 1, 0.5), 1/6;
 
