@@ -1,0 +1,16 @@
+use v6.d;
+use Test;
+
+use lib <. lib>;
+use Math::Splines;
+
+## 1
+isa-ok bernstein-basis(:3degree, :2index, argument => Whatever), Callable;
+
+## 2
+isa-ok bernstein-basis(:3degree, :0index, argument => Whatever), Callable;
+
+## 3
+is bernstein-basis(4, 3, 0.5), 0.25;
+
+done-testing;
