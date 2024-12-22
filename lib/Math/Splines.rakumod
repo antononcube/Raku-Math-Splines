@@ -208,11 +208,21 @@ sub b-spline-curve-value(@control-points,
 #| C<$x> -- argument
 proto sub bernstein-basis(|) is export {*}
 
-multi sub bernstein-basis(UInt:D :degree(:$d), UInt:D :index(:$i), Real:D :arg(:argument(:$x))) {
+multi sub bernstein-basis(UInt:D :degree(:$d), UInt:D :index(:$i), :arg(:argument(:$x))) {
     return bernstein-basis($d, $i, $x);
 }
 
 multi sub bernstein-basis(UInt:D $d, UInt:D $i, Real:D $x) {
     return 0 if $d < $i || $x < 0 || $x > 1;
     return ([*] ($d - $i + 1) .. $d) / ([*] (1..$i)) * $x**$i * (1 - $x)**($d - $i);
+}
+
+multi sub bernstein-basis(UInt:D $d, UInt:D $i, Whatever) {
+    return { 0 } if $d < $i;
+    return -> $x {
+        if $x < 0 || $x > 1 { 0 }
+        else {
+           ([*] ($d - $i + 1) .. $d) /  ([*] (1.. $i )) * $x**$i * (1 - $x)**($d - $i)
+        }
+    }
 }
