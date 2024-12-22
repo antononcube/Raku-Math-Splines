@@ -3,7 +3,7 @@ use v6.d;
 unit module Math::Splines;
 
 #===========================================================
-# B-spline basis
+# Utilities
 #===========================================================
 
 sub div-z(Numeric:D $s, Numeric:D $t) {
@@ -31,20 +31,22 @@ multi sub uniform-knots(UInt:D $d, UInt:D $n) is export {
 # B-spline basis
 #===========================================================
 
-multi sub b-spline-basis(|) is export {*}
+multi sub b-spline-basis-value(|) is export {*}
 
-multi sub b-spline-basis(Int $d, Int $n, Real $x) {
+multi sub b-spline-basis-value(UInt:D $d, UInt:D $n, Real $x) {
     my $k = $d + 1;
-    my @knots = |(0, 1 / $k ... 1), ||(1 xx ($d + 1));
-    return b-spline-basis(:$d, :@knots, :$n, :$x)
+    my @knots = |(0, 1 / $k ... 1), |(1 xx ($d + 1));
+    return 0 if $n > @knots.elems - $d - 2;
+    return b-spline-basis-value(:$d, :@knots, :$n, :$x)
 }
 
-multi sub b-spline-basis(UInt:D :degree(:$d)!, :@knots!, UInt:D :index(:$n)!, Numeric:D :arg(:argument(:$x))!) {
+multi sub b-spline-basis-value(UInt:D :degree(:$d)!, :@knots!, UInt:D :index(:$n)!, Numeric:D :arg(:argument(:$x))!) {
+    return 0 if $n > @knots.elems - $d - 2;
     return do if $d {
         my $l = $d - 1;
         my $j = $n + 1;
-        div-z($x - @knots[$n], @knots[$n + $d] - @knots[$n]) * b-spline-basis(d => $l, :@knots, :$n, :$x) +
-                div-z(@knots[$n + $d + 1] - $x, @knots[$n + $d + 1] - @knots[$n + 1]) * b-spline-basis(d => $l, :@knots, n => $j, :$x);
+        div-z($x - @knots[$n], @knots[$n + $d] - @knots[$n]) * b-spline-basis-value(d => $l, :@knots, :$n, :$x) +
+                div-z(@knots[$n + $d + 1] - $x, @knots[$n + $d + 1] - @knots[$n + 1]) * b-spline-basis-value(d => $l, :@knots, n => $j, :$x);
     } else {
         ((@knots[$n] <= $x < @knots[$n + 1]) || ($x == 1 && @knots[$n + 1] == 1)) ?? 1 !! 0
     }
@@ -54,13 +56,17 @@ multi sub b-spline-basis(UInt:D :degree(:$d)!, :@knots!, UInt:D :index(:$n)!, Nu
 # B-spline basis functions
 #===========================================================
 
-sub b-spline-basis-function(UInt:D $d, @knots, UInt:D $n) is export {
+sub b-spline-basis(UInt:D :degree(:$d), :@knots, UInt:D :index(:$n)) is export {
+    my $m = @knots.elems - $d - 2;
+    die "The basis function index \$n is expected to be an integer between 0 and $m."
+    unless $n ≤ $m;
+
     return do if $d {
         my $l = $d - 1;
         my $j = $n + 1;
         -> $t {
-            div-z($t - @knots[$n], @knots[$n + $d] - @knots[$n]) * b-spline-basis-function($l, @knots, $n)($t) +
-                    div-z(@knots[$n + $d + 1] - $t, @knots[$n + $d + 1] - @knots[$n + 1]) * b-spline-basis-function($l, @knots, $j)($t);
+            div-z($t - @knots[$n], @knots[$n + $d] - @knots[$n]) * b-spline-basis(d => $l, :@knots, :$n)($t) +
+                    div-z(@knots[$n + $d + 1] - $t, @knots[$n + $d + 1] - @knots[$n + 1]) * b-spline-basis(d => $l, :@knots, n => $j)($t);
         }
     } else {
         -> $t {
@@ -69,12 +75,12 @@ sub b-spline-basis-function(UInt:D $d, @knots, UInt:D $n) is export {
     }
 }
 
-sub b-spline-curve(@x, @knots) is export {
+sub b-spline-curve(:@knots, :@x) is export {
     my $n = @x.elems;
     my $m = @knots.elems - @x.elems - 1;
 
     my &res = -> $t {
-        [\+] (^$n).map({ b-spline-basis-function($_, $m, @knots)($t) * @x[$_] });
+        [\+] (^$n).map({ b-spline-basis($_, $m, @knots)($t) * @x[$_] });
     }
 
     return &res;
