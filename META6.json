@@ -9,7 +9,7 @@
     "auth": "zef:antononcube",
     "build-depends": [],
     "provides": {
-        "Math::SpecialFunctions": "lib/Math/Splines.rakumod"
+        "Math::Splines": "lib/Math/Splines.rakumod"
     },
     "license": "Artistic-2.0",
     "tags": [
