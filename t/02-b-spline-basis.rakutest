@@ -1,0 +1,15 @@
+use v6.d;
+use Test;
+
+use lib <. lib>;
+use Math::Splines;
+
+## 1
+isa-ok b-spline-basis(:3degree, knots => 10, :2index), Callable;
+
+## 2
+my @knots = b-spline-knots(:3degree, :10n);
+isa-ok b-spline-basis(:3degree, :@knots, :0index), Callable;
+
+
+done-testing;
