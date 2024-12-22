@@ -16,7 +16,19 @@ sub power-z($x, $y) {
 
 #-----------------------------------------------------------
 
-proto sub uniform-knots(|) is export {*}
+sub b-spline-knots(*@args, *%args) is export {
+    my $method = %args<method> // Whatever;
+
+    return do given $method {
+        when 'uniform' { uniform-knots(|@args, |%args) }
+        when Whatever { uniform-knots(|@args, |%args) }
+        default {
+            die "Unknown method."
+         }
+    }
+}
+
+proto sub uniform-knots(|) {*}
 
 multi sub uniform-knots(UInt:D :degree(:$d), UInt:D :$n) is export {
     my @a = |(0 xx ($d + 1)), |(1 .. $n - $d - 1).map({ ($_ / ($n - $d)) }), |(1 xx ($d + 1));

@@ -15,7 +15,7 @@ say (:@values);
 
 #my @knots = 0, 0, 0, 0, 1/10, 1/5, 3/10, 2/5, 1/2, 3/5, 7/10, 4/5, 9/10, 1, 1, 1, 1;
 #my @knots = 0, 1/10, 1/5, 3/10, 2/5, 1/2, 3/5, 7/10, 4/5, 9/10, 1;
-my @knots = uniform-knots(n => 10, d => 3);
+my @knots = b-spline-knots(n => 10, d => 3);
 say (:@knots);
 say @knots.elems;
 my @knots-values = @xs.map({ b-spline-basis-value(d => 3, :@knots, :3index, arg => $_) });
