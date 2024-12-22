@@ -68,7 +68,14 @@ multi sub b-spline-basis-value(UInt:D :degree(:$d)!, :@knots!, UInt:D :index(:$n
 # B-spline basis functions
 #===========================================================
 
-sub b-spline-basis(UInt:D :degree(:$d), :@knots, UInt:D :index(:$n)) is export {
+proto sub b-spline-basis(UInt:D :degree(:$d)!, :$knots!, UInt:D :index(:$n)!) is export {*}
+
+multi sub b-spline-basis(UInt:D :degree(:$d)!, UInt:D :$knots!, UInt:D :index(:$n)!) {
+    my @knots = b-spline-knots(:$d, n => $knots);
+    return b-spline-basis(:$d, :@knots, :$n);
+}
+
+multi sub b-spline-basis(UInt:D :degree(:$d)!, :@knots!, UInt:D :index(:$n)!) {
     my $m = @knots.elems - $d - 2;
     die "The basis function index \$n is expected to be an integer between 0 and $m."
     unless $n ≤ $m;
@@ -87,12 +94,13 @@ sub b-spline-basis(UInt:D :degree(:$d), :@knots, UInt:D :index(:$n)) is export {
     }
 }
 
+#-----------------------------------------------------------
 sub b-spline-curve(:@knots, :@x) is export {
     my $n = @x.elems;
     my $m = @knots.elems - @x.elems - 1;
 
     my &res = -> $t {
-        [\+] (^$n).map({ b-spline-basis($_, $m, @knots)($t) * @x[$_] });
+        [\+] (^$n).map({ b-spline-basis(degree => $m, :@knots, index => $_)($t) * @x[$_] });
     }
 
     return &res;
