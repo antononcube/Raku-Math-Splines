@@ -201,3 +201,18 @@ sub b-spline-curve-value(@control-points,
 #===========================================================
 # Bernstein basis
 #===========================================================
+
+#| Represents the i^th Bernstein basis function of degree d at x.
+#| C<$d> -- degree
+#| C<$i> -- index
+#| C<$x> -- argument
+proto sub bernstein-basis(|) is export {*}
+
+multi sub bernstein-basis(UInt:D :degree(:$d), UInt:D :index(:$i), Real:D :arg(:argument(:$x))) {
+    return bernstein-basis($d, $i, $x);
+}
+
+multi sub bernstein-basis(UInt:D $d, UInt:D $i, Real:D $x) {
+    return 0 if $d < $i || $x < 0 || $x > 1;
+    return ([*] ($d - $i + 1) .. $d) / ([*] (1..$i)) * $x**$i * (1 - $x)**($d - $i);
+}
