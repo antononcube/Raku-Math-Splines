@@ -42,11 +42,11 @@ multi sub uniform-knots(UInt:D $d, UInt:D $n) is export {
 #===========================================================
 # B-spline basis
 #===========================================================
-multi sub b-spline-basis(|) is export {*}
+proto sub b-spline-basis(|) is export {*}
 
 multi sub b-spline-basis(UInt:D $d, UInt:D $i, $x, :$knots is copy = Whatever) {
     return do given $x {
-        when Numeric:D { b-spline-basis-value(:$d, :$i, :$x) }
+        when Numeric:D { b-spline-basis-value(:$d, :$i, :$x, :$knots) }
         when Whatever { b-spline-basis-function(:$d, :$i, :$knots) }
         default {
             die 'The third argument is expected to be a number or Whatever.'
@@ -71,26 +71,25 @@ multi sub b-spline-basis(UInt:D :degree(:$d)!,
 # B-spline basis value
 #===========================================================
 
-multi sub b-spline-basis-value(|) is export {*}
+proto sub b-spline-basis-value(|) is export {*}
 
 multi sub b-spline-basis-value(UInt:D $d, UInt:D $i, Numeric:D $x, :$knots is copy = Whatever) {
+    return b-spline-basis-value(:$d, :$knots, :$i, :$x)
+}
+
+multi sub b-spline-basis-value(UInt:D :degree(:$d)!, :$knots is copy = Whatever, UInt:D :index(:$i)!, Numeric:D :arg(:argument(:$x))!) {
     if $knots.isa(Whatever) {
         my $k = $d + 1;
         $knots = [|(0, 1 / $k ... 1), |(1 xx ($d + 1))];
     }
     return 0 if $i > $knots.elems - $d - 2;
-    return b-spline-basis-value(:$d, :$knots, :$i, :$x)
-}
-
-multi sub b-spline-basis-value(UInt:D :degree(:$d)!, :@knots!, UInt:D :index(:$i)!, Numeric:D :arg(:argument(:$x))!) {
-    return 0 if $i > @knots.elems - $d - 2;
     return do if $d {
         my $l = $d - 1;
         my $j = $i + 1;
-        div-z($x - @knots[$i], @knots[$i + $d] - @knots[$i]) * b-spline-basis-value(d => $l, :@knots, :$i, :$x) +
-                div-z(@knots[$i + $d + 1] - $x, @knots[$i + $d + 1] - @knots[$i + 1]) * b-spline-basis-value(d => $l, :@knots, i => $j, :$x);
+        div-z($x - $knots[$i], $knots[$i + $d] - $knots[$i]) * b-spline-basis-value(d => $l, :$knots, :$i, :$x) +
+                div-z($knots[$i + $d + 1] - $x, $knots[$i + $d + 1] - $knots[$i + 1]) * b-spline-basis-value(d => $l, :$knots, i => $j, :$x);
     } else {
-        ((@knots[$i] <= $x < @knots[$i + 1]) || ($x == 1 && @knots[$i + 1] == 1)) ?? 1 !! 0
+        (($knots[$i] <= $x < $knots[$i + 1]) || ($x == 1 && $knots[$i + 1] == 1)) ?? 1 !! 0
     }
 }
 
