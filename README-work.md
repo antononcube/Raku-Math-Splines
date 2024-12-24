@@ -6,7 +6,7 @@ Raku package for splines (piecewise polynomials), like, Bezier splines or B-spli
 
 ## Installation
 
-From Zef ecosytem:
+From [Zef ecosystem](https://raku.land):
 
 ```
 zef install Math::Splines
@@ -65,11 +65,13 @@ text-list-plot(@points, width => 80, height => 20, title => 'Bernstein basis')
 
 ## TODO
 
-- [ ] Documentation
-  - [X] Notebooks
-    - [X] [B-spline basis](./docs/B-spline-basis.ipynb)
-    - [X] [B-spline curve](./docs/B-spline-curve.ipynb)
-  - [ ] 2D B-spline curve with control points
+- [ ] TODO Implementation
+  - [ ] TODO Bezier curve
+- [ ] TODO Documentation
+  - [X] DONE Notebooks
+    - [X] DONE [B-spline basis](./docs/B-spline-basis.ipynb)
+    - [X] DONE [B-spline curve](./docs/B-spline-curve.ipynb)
+  - [ ] TODO Demo of 2D B-spline curve with control points
 
 
 -------
