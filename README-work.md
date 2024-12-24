@@ -37,7 +37,6 @@ Using positional arguments:
 b-spline-basis(3, 0, 0.5)
 ```
 
-
 Using named arguments:
 
 ```raku
@@ -53,6 +52,18 @@ my $m = @knots.elems - $degree - 2;
 my @points = (0..$m).map( -> $k { (0, 0.01 ... 1).map({ [$_, b-spline-basis(:$degree, :@knots, index => $k, argument => $_)] }) })».Array;
 text-list-plot(@points, width => 80, height => 20, title => 'B-spline basis')
 ```
+
+### Functions instead of values
+
+If the argument `:arg(:argument(:$x))` of `b-spline-basis` is `Whatever`, then a function is returned:
+
+```raku
+my &bf = b-spline-basis(:3degree, :0index, arg => Whatever);
+
+&bf(0.25)
+```
+
+Alternatively, the subs `b-spline-basis-value` and `b-spline-basis-function` can be used to get values and functions respectively.
 
 ### Bernstein basis
 

@@ -43,7 +43,6 @@ b-spline-basis(3, 0, 0.5)
 # 0.666667
 ```
 
-
 Using named arguments:
 
 ```raku
@@ -86,6 +85,21 @@ text-list-plot(@points, width => 80, height => 20, title => 'B-spline basis')
 # +---+-------------+-------------+-------------+-------------+-------------+----+      
 #     0.00          0.20          0.40          0.60          0.80          1.00
 ```
+
+### Functions instead of values
+
+If the argument `:arg(:argument(:$x))` of `b-spline-basis` is `Whatever`, then a function is returned:
+
+```raku
+my &bf = b-spline-basis(:3degree, :0index, arg => Whatever);
+
+&bf(0.25)
+```
+```
+# 0.125
+```
+
+Alternatively, the subs `b-spline-basis-value` and `b-spline-basis-function` can be used to get values and functions respectively.
 
 ### Bernstein basis
 
