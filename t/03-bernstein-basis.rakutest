@@ -1,8 +1,10 @@
 use v6.d;
 use Test;
 
-use lib <. lib>;
+#use lib <. lib>;
 use Math::Splines;
+
+plan *;
 
 ## 1
 isa-ok bernstein-basis(:3degree, :2index, argument => Whatever), Callable;
