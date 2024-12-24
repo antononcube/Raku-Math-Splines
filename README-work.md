@@ -51,14 +51,14 @@ Plot the basis of degree 3:
 ```raku
 my $m = @knots.elems - $degree - 2;
 my @points = (0..$m).map( -> $k { (0, 0.01 ... 1).map({ [$_, b-spline-basis(:$degree, :@knots, index => $k, argument => $_)] }) })».Array;
-text-list-plot(@points, width => 120, height => 25, title => 'B-spline basis')
+text-list-plot(@points, width => 80, height => 20, title => 'B-spline basis')
 ```
 
 ### Bernstein basis
 
 ```raku
 my @points = (^4).map( -> $k { (0, 0.01 ... 1).map({ [$_, bernstein-basis(3, $k, $_)] }) })».Array;
-text-list-plot(@points, width => 120, height => 25, title => 'Bernstein basis')
+text-list-plot(@points, width => 80, height => 20, title => 'Bernstein basis')
 ```
 
 -------
