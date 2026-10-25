@@ -1,7 +1,7 @@
 {
     "name": "Math::Splines",
     "description": "Raku package for splines (piecewise polynomials), like, Bezier splines or B-splines.",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "raku": "6.d",
     "authors": [
         "Anton Antonov"
