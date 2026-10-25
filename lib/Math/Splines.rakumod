@@ -71,6 +71,93 @@ multi sub b-spline-basis(UInt:D :degree(:$d)!,
 # B-spline basis value
 #===========================================================
 
+## Return the span whose non-zero basis functions contain $x.  A span is
+## deliberately found only once per evaluation; the Cox--de Boor recurrence
+## below can then calculate all of its ($d + 1) non-zero values together.
+sub b-spline-knot-span(@knots, UInt:D $d, Numeric:D $x) {
+    my $n = @knots.elems - $d - 2;
+    return Nil if $n < 0 || $x < @knots[0] || $x > @knots[$n + 1];
+    return $n if $x == @knots[$n + 1];
+
+    my $low = 0;
+    my $high = $n + 1;
+    while $high - $low > 1 {
+        my $mid = ($low + $high) div 2;
+        if $x < @knots[$mid] {
+            $high = $mid;
+        } else {
+            $low = $mid;
+        }
+    }
+    return $low;
+}
+
+## Calculate the complete local basis instead of expanding the binary
+## recursion tree for one basis value.  The lower-degree rows are retained
+## only for the indices needed by the current span, giving O(d ** 2) work.
+sub b-spline-active-basis-values(@knots, UInt:D $d, Numeric:D $x, Int:D $span) {
+    my @previous;
+    @previous[$span] = 1;
+
+    for 1 .. $d -> $order {
+        my @current;
+        my $first = max(0, $span - $order);
+        my $last = min($span, @knots.elems - $order - 2);
+        for $first .. $last -> $i {
+            @current[$i] =
+                div-z($x - @knots[$i], @knots[$i + $order] - @knots[$i]) * (@previous[$i] // 0) +
+                div-z(@knots[$i + $order + 1] - $x, @knots[$i + $order + 1] - @knots[$i + 1]) * (@previous[$i + 1] // 0);
+        }
+        @previous = @current;
+    }
+
+    my $first = max(0, $span - $d);
+    my $last = min($span, @knots.elems - $d - 2);
+    return ($first .. $last).map({ @previous[$_] // 0 });
+}
+
+sub b-spline-basis-value-core(UInt:D $d, @knots, UInt:D $i, Numeric:D $x) {
+    return 0 if $i > @knots.elems - $d - 2;
+    my $span = b-spline-knot-span(@knots, $d, $x);
+    return 0 unless $span.defined;
+    my $first-index = max(0, $span - $d);
+    return 0 unless $i >= $first-index && $i <= $span;
+
+    my @values = b-spline-active-basis-values(@knots, $d, $x, $span);
+    return @values[$i - $first-index];
+}
+
+sub rational-de-boor-value(@control-points, @weights, @knots,
+                           UInt:D $degree, Numeric:D $x, Int:D $span) {
+    my @work;
+    for 0 .. $degree -> $j {
+        my $i = $span - $degree + $j;
+        my $weight = @weights[$i];
+        @work[$j] = [
+            $weight * @control-points[$i][0],
+            $weight * @control-points[$i][1],
+            $weight,
+        ];
+    }
+
+    for 1 .. $degree -> $r {
+        for ($r .. $degree).reverse -> $j {
+            my $i = $span - $degree + $j;
+            my $alpha = div-z($x - @knots[$i], @knots[$i + $degree - $r + 1] - @knots[$i]);
+            my $left = @work[$j - 1];
+            my $right = @work[$j];
+            @work[$j] = [
+                (1 - $alpha) * $left[0] + $alpha * $right[0],
+                (1 - $alpha) * $left[1] + $alpha * $right[1],
+                (1 - $alpha) * $left[2] + $alpha * $right[2],
+            ];
+        }
+    }
+
+    my $result = @work[$degree];
+    return $result[2] == 0 ?? [0, 0] !! [$result[0] / $result[2], $result[1] / $result[2]];
+}
+
 proto sub b-spline-basis-value(|) is export {*}
 
 multi sub b-spline-basis-value(UInt:D $d, UInt:D $i, Numeric:D $x, :$knots is copy = Whatever) {
@@ -82,15 +169,7 @@ multi sub b-spline-basis-value(UInt:D :degree(:$d)!, :$knots is copy = Whatever,
         my $k = $d + 1;
         $knots = [|(0, 1 / $k ... 1), |(1 xx ($d + 1))];
     }
-    return 0 if $i > $knots.elems - $d - 2;
-    return do if $d {
-        my $l = $d - 1;
-        my $j = $i + 1;
-        div-z($x - $knots[$i], $knots[$i + $d] - $knots[$i]) * b-spline-basis-value(d => $l, :$knots, :$i, :$x) +
-                div-z($knots[$i + $d + 1] - $x, $knots[$i + $d + 1] - $knots[$i + 1]) * b-spline-basis-value(d => $l, :$knots, i => $j, :$x);
-    } else {
-        (($knots[$i] <= $x < $knots[$i + 1]) || ($x == 1 && $knots[$i + 1] == 1)) ?? 1 !! 0
-    }
+    return b-spline-basis-value-core($d, $knots, $i, $x);
 }
 
 #===========================================================
@@ -120,19 +199,9 @@ multi sub b-spline-basis-function(UInt:D :degree(:$d)!,
     die "The basis function index \$i is expected to be an integer between 0 and $m."
     unless $i ≤ $m;
 
-    # Main computation
-    return do if $d {
-        my $l = $d - 1;
-        my $j = $i + 1;
-        -> $t {
-            div-z($t - $knots[$i], $knots[$i + $d] - $knots[$i]) * b-spline-basis-function(d => $l, :$knots, :$i)($t) +
-                    div-z($knots[$i + $d + 1] - $t, $knots[$i + $d + 1] - $knots[$i + 1]) * b-spline-basis-function(d => $l, :$knots, i => $j)($t);
-        }
-    } else {
-        -> $t {
-            (($knots[$i] <= $t < $knots[$i + 1]) || ($t == 1 && $knots[$i + 1] == 1)) ?? 1 !! 0
-        }
-    }
+    # The knots and index are validated once when making the callable.  Each
+    # invocation uses the same iterative evaluator as b-spline-basis-value.
+    return -> $t { b-spline-basis-value-core($d, $knots, $i, $t) }
 }
 
 #===========================================================
@@ -179,19 +248,33 @@ sub b-spline-curve-value(@control-points,
     my $n = @control-points.elems - 1;
 
     if $knots.isa(Whatever) {
-        $knots = uniform-knots($n, $degree)
+        $knots = uniform-knots($degree, @control-points.elems)
     }
     die 'The argument :$knots is expected to be Whatever or a list of numbers.'
     unless $knots ~~ (List:D | Array:D | Seq:D) && $knots.all ~~ Numeric:D;
 
+    die 'The argument :$weights is expected to have the same length as the control points.'
+    unless $weights.elems == @control-points.elems;
+
+    my $span = b-spline-knot-span($knots, $degree, $argument);
+    return [0, 0] unless $span.defined;
+    return rational-de-boor-value(@control-points, $weights, $knots, $degree, $argument, $span)
+    if $span >= $degree;
+
+    # Preserve support before the conventional clamped domain for unusual,
+    # non-clamped knot vectors.
+    my @basis-values = b-spline-active-basis-values($knots, $degree, $argument, $span);
+    my $first-index = max(0, $span - $degree);
     my $numerator = [0, 0];
     my $denominator = 0;
 
-    for 0..$n -> $i {
-        my $basis-value = b-spline-basis(index => $i, :$degree, :$knots, :$argument);
-        $numerator[0] += $weights[$i] * $basis-value * @control-points[$i][0];
-        $numerator[1] += $weights[$i] * $basis-value * @control-points[$i][1];
-        $denominator += $weights[$i] * $basis-value;
+    for ^@basis-values.elems -> $offset {
+        my $i = $first-index + $offset;
+        next if $i < 0 || $i > $n;
+        my $weighted-basis = $weights[$i] * @basis-values[$offset];
+        $numerator[0] += $weighted-basis * @control-points[$i][0];
+        $numerator[1] += $weighted-basis * @control-points[$i][1];
+        $denominator += $weighted-basis;
     }
 
     return $denominator == 0 ?? [0, 0] !! [$numerator[0] / $denominator, $numerator[1] / $denominator];

@@ -14,4 +14,18 @@ isa-ok b-spline-basis(:3degree, :0index, arg => 0.5), Numeric:D;
 
 isa-ok b-spline-basis(3, 0, 0.5), Numeric:D;
 
+my @knots = b-spline-knots(d => 3, n => 8);
+my $basis-count = @knots.elems - 3 - 1;
+my @values = (^$basis-count).map({ b-spline-basis-value(d => 3, :@knots, index => $_, arg => 0.5) });
+is-deeply @values, [0, 0, 1/48, 23/48, 23/48, 1/48, 0, 0],
+    'iterative evaluator returns the active cubic basis values';
+is ([+] @values), 1,
+    'active basis values form a partition of unity';
+is b-spline-basis-value(d => 3, :@knots, index => 0, arg => 0.9), 0,
+    'basis values outside their support return zero';
+
+my &basis-function = b-spline-basis-function(d => 3, :@knots, index => 2);
+is basis-function(0.5), b-spline-basis-value(d => 3, :@knots, index => 2, arg => 0.5),
+    'basis callable shares the value evaluator';
+
 done-testing;
